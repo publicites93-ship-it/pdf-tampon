@@ -51,8 +51,22 @@ class StampViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Sélection ----------
 
+    /**
+     * Demande un accès persistant en lecture. Sans cela, l'accès accordé par le sélecteur
+     * peut être révoqué avant le traitement (erreur « Permission Denial » à l'aperçu).
+     * Android limite le nombre d'accès persistants : au-delà, l'accès reste celui de la session.
+     */
+    private fun persistRead(uri: Uri) {
+        try {
+            ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (e: SecurityException) {
+            // Accès non persistable ou quota atteint : on continue avec l'accès de session.
+        }
+    }
+
     fun addPdfs(uris: List<Uri>) {
         viewModelScope.launch(Dispatchers.IO) {
+            uris.forEach { persistRead(it) }
             val items = uris.map { u ->
                 PdfItem(u, FileIo.displayName(ctx, u), FileIo.size(ctx, u), FileIo.looksLikePdf(ctx, u))
             }
@@ -62,6 +76,7 @@ class StampViewModel(app: Application) : AndroidViewModel(app) {
 
     fun addFolder(tree: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
+            persistRead(tree)
             val items = FileIo.listPdfsInTree(ctx, tree).map { d ->
                 PdfItem(
                     uri = d.uri,
@@ -82,6 +97,7 @@ class StampViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setImage(uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
+            persistRead(uri)
             try {
                 val f = File(workDir, "stamp.img")
                 FileIo.copyTo(ctx, uri, f, FileIo.MAX_IMAGE_BYTES)
