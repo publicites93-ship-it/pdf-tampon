@@ -1,0 +1,20 @@
+# Gradle / Android
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Secrets et clés de signature : ne jamais versionner
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store
